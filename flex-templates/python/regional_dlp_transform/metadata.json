@@ -3,9 +3,9 @@
   "description": "Python flex template for streaming BiqQuery data through regional DLP to transform the data.",
   "parameters": [
     {
-      "name": "input_table",
-      "label": "BigQuery input table name.",
-      "helpText": "Input BigQuery table for results specified as: PROJECT:DATASET.TABLE or DATASET.TABLE."
+      "name": "query",
+      "label": "SQL query to retrieve input data.",
+      "helpText": "Input query to retrieve data from Dataset. Example: `SELECT * FROM PROJECT.DATASET.TABLE LIMIT 100`."
     },
     {
       "name": "deidentification_template_name",

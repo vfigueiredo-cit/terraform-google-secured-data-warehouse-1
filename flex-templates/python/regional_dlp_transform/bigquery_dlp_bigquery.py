@@ -29,11 +29,11 @@ def run(argv=None, save_main_session=True):
     """Build and run the pipeline."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--input_table',
+        '--query',
         required=True,
         help=(
-            'Input BigQuery table for results specified as: '
-            'PROJECT:DATASET.TABLE or DATASET.TABLE.'
+            'Input query to retrieve data from Dataset. '
+            'Example: `SELECT * FROM PROJECT.DATASET.TABLE LIMIT 100`.'
         )
     )
     parser.add_argument(
@@ -115,7 +115,7 @@ def run(argv=None, save_main_session=True):
             p
             | 'Read from BigQuery Table' >>
             beam.io.ReadFromBigQuery(
-                table=known_args.input_table
+                query=known_args.query
             )
             | 'Apply window' >> beam.WindowInto(
                 window.FixedWindows(known_args.window_interval_sec, 0)
