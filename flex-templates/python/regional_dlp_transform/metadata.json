@@ -5,7 +5,14 @@
     {
       "name": "query",
       "label": "SQL query to retrieve input data.",
-      "helpText": "Input query to retrieve data from Dataset. Example: `SELECT * FROM PROJECT.DATASET.TABLE LIMIT 100`."
+      "helpText": "Input query to retrieve data from Dataset. Example: `SELECT * FROM PROJECT.DATASET.TABLE LIMIT 100`.",
+      "isOptional": true
+    },
+    {
+      "name": "input_table",
+      "label": "BigQuery input table name.",
+      "helpText": "Input BigQuery table for results specified as: PROJECT:DATASET.TABLE or DATASET.TABLE.",
+      "isOptional": true
     },
     {
       "name": "deidentification_template_name",

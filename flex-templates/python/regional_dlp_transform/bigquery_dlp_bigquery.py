@@ -30,10 +30,18 @@ def run(argv=None, save_main_session=True):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--query',
-        required=True,
+        required=False,
         help=(
             'Input query to retrieve data from Dataset. '
-            'Example: `SELECT * FROM PROJECT.DATASET.TABLE LIMIT 100`.'
+            'Example: `SELECT * FROM PROJECT:DATASET.TABLE LIMIT 100`.'
+        )
+    )
+    parser.add_argument(
+        '--input_table',
+        required=False,
+        help=(
+            'Input BigQuery table for results specified as: '
+            'PROJECT:DATASET.TABLE or DATASET.TABLE.'
         )
     )
     parser.add_argument(
@@ -111,16 +119,28 @@ def run(argv=None, save_main_session=True):
     with beam.Pipeline(options=options) as p:
 
         # Read from BigQuery into a PCollection.
-        messages = (
-            p
-            | 'Read from BigQuery Table' >>
-            beam.io.ReadFromBigQuery(
-                query=known_args.query
+        if known_args.query != None:
+            messages = (
+                p
+                | 'Read from BigQuery Table' >>
+                beam.io.ReadFromBigQuery(
+                    query=known_args.query
+                )
+                | 'Apply window' >> beam.WindowInto(
+                    window.FixedWindows(known_args.window_interval_sec, 0)
+                )
             )
-            | 'Apply window' >> beam.WindowInto(
-                window.FixedWindows(known_args.window_interval_sec, 0)
+        else:
+            messages = (
+                p
+                | 'Read from BigQuery Table' >>
+                beam.io.ReadFromBigQuery(
+                    table=known_args.input_table
+                )
+                | 'Apply window' >> beam.WindowInto(
+                    window.FixedWindows(known_args.window_interval_sec, 0)
+                )
             )
-        )
 
         if known_args.dlp_transform == 'RE-IDENTIFY':
             transformed_messages = (
