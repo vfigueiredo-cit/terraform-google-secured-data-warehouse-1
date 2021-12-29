@@ -119,7 +119,7 @@ def run(argv=None, save_main_session=True):
     with beam.Pipeline(options=options) as p:
 
         # Read from BigQuery into a PCollection.
-        if known_args.query != None:
+        if known_args.query is not None:
             messages = (
                 p
                 | 'Read from BigQuery Table' >>
