@@ -8,16 +8,16 @@
                     {
                         "fields": [
                             {
-                                "name": "ein"
+                                "name": "Card Number"
                             },
                             {
-                                "name": "name"
+                                "name": "Card Holder'\''s Name"
                             },
                             {
-                                "name": "street"
+                                "name": "CVV/CVV2"
                             },
                             {
-                                "name": "organization"
+                                "name": "Expiry Date"
                             }
                         ],
                         "primitiveTransformation": {
@@ -30,7 +30,24 @@
                                 }
                             }
                         }
-                    }
+                    },
+                    {
+                        "fields": [
+                            {
+                                "name": "Card PIN"
+                            }
+                        ],
+                        "primitiveTransformation": {
+                            "cryptoHashConfig": {
+                                "cryptoKey": {
+                                    "kmsWrapped": {
+                                        "cryptoKeyName": "${crypto_key}",
+                                        "wrappedKey": "${wrapped_key}"
+                                    }
+                                }
+                            }
+                        }
+                    },
                 ]
             }
         }

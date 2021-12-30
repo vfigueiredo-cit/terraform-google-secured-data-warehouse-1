@@ -203,7 +203,7 @@ resource "null_resource" "python_re_identification_flex_template" {
     terraform_service_account = var.service_account_email
     template_image_tag        = local.python_re_identify_flex_template_image_tag
     template_gs_path          = local.python_re_identify_template_gs_path
-    deploy                    = "true"
+    deploy                    = "truee"
   }
 
   provisioner "local-exec" {
