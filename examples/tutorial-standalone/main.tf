@@ -87,7 +87,7 @@ module "de_identification_template" {
   dlp_location              = local.location
   template_id_prefix        = "de_identification"
   template_file             = "${path.module}/templates/deidentification.tmpl"
-  dataflow_service_account  = module.secured_data_warehouse.dataflow_controller_service_account_email
+  dataflow_service_account  = module.secured_data_warehouse.confidential_dataflow_controller_service_account_email
 }
 
 module "re_identification_template" {
@@ -227,45 +227,11 @@ resource "google_artifact_registry_repository_iam_member" "confidential_docker_r
 #   ]
 # }
 
-# module "regional_dlp_transform_deid_python_query" {
-#   source = "../../modules/dataflow-flex-job"
-
-#   project_id              = module.base_projects.confidential_data_project_id
-#   name                    = "dataflow-flex-regional-dlp-deid-job-python-query"
-#   container_spec_gcs_path = module.template_project.python_re_identify_template_gs_path
-#   job_language            = "PYTHON"
-#   region                  = local.location
-#   service_account_email   = module.secured_data_warehouse.confidential_dataflow_controller_service_account_email
-#   subnetwork_self_link    = module.base_projects.confidential_subnets_self_link
-#   kms_key_name            = module.secured_data_warehouse.cmek_reidentification_crypto_key
-#   temp_location           = "gs://${module.secured_data_warehouse.confidential_data_dataflow_bucket_name}/tmp/"
-#   staging_location        = "gs://${module.secured_data_warehouse.confidential_data_dataflow_bucket_name}/staging/"
-
-#   parameters = {
-#     #query                           = "SELECT * FROM [${module.base_projects.non_confidential_data_project_id}:non_confidential_dataset.python_flex_template_test]"
-#     query                           = "SELECT * FROM [bigquery-public-data:irs_990.irs_990_ein] LIMIT 10"
-#     deidentification_template_name  = "${module.re_identification_template.template_full_path}"
-#     window_interval_sec             = 30
-#     batch_size                      = 1000
-#     dlp_location                    = local.location
-#     dlp_project                     = "${module.base_projects.data_governance_project_id}"
-#     bq_schema                       = local.bq_schema_irs_990_ein
-#     output_table                    = "${module.base_projects.confidential_data_project_id}:secured_dataset.python_flex_template_deid_test_query"
-#     dlp_transform                   = "DE-IDENTIFY"
-#   }
-
-#   depends_on = [
-#     time_sleep.wait_de_identify_job_execution,
-#     google_bigquery_table.re_id
-#   ]
-# }
-
-
-module "regional_dlp_transform_deid_python_table" {
+module "regional_dlp_transform_deid_python_query" {
   source = "../../modules/dataflow-flex-job"
 
   project_id              = module.base_projects.confidential_data_project_id
-  name                    = "dataflow-flex-regional-dlp-deid-job-python-table"
+  name                    = "dataflow-flex-regional-dlp-deid-job-python-query"
   container_spec_gcs_path = module.template_project.python_re_identify_template_gs_path
   job_language            = "PYTHON"
   region                  = local.location
@@ -276,14 +242,15 @@ module "regional_dlp_transform_deid_python_table" {
   staging_location        = "gs://${module.secured_data_warehouse.confidential_data_dataflow_bucket_name}/staging/"
 
   parameters = {
-    input_table                     = "bigquery-public-data:irs_990.irs_990_ein"
-    deidentification_template_name  = "${module.re_identification_template.template_full_path}"
+    #query                           = "SELECT * FROM [${module.base_projects.non_confidential_data_project_id}:non_confidential_dataset.python_flex_template_test]"
+    query                           = "SELECT * FROM [bigquery-public-data:irs_990.irs_990_ein] LIMIT 10"
+    deidentification_template_name  = "${module.de_identification_template.template_full_path}"
     window_interval_sec             = 30
     batch_size                      = 1000
     dlp_location                    = local.location
     dlp_project                     = "${module.base_projects.data_governance_project_id}"
     bq_schema                       = local.bq_schema_irs_990_ein
-    output_table                    = "${module.base_projects.confidential_data_project_id}:secured_dataset.python_flex_template_deid_test_table"
+    output_table                    = "${module.base_projects.confidential_data_project_id}:secured_dataset.python_flex_template_deid_test_query"
     dlp_transform                   = "DE-IDENTIFY"
   }
 
@@ -293,7 +260,40 @@ module "regional_dlp_transform_deid_python_table" {
   ]
 }
 
-# module "regional_dlp_transform_reid_python" {
+
+# module "regional_dlp_transform_deid_python_table" {
+#   source = "../../modules/dataflow-flex-job"
+
+#   project_id              = module.base_projects.confidential_data_project_id
+#   name                    = "dataflow-flex-regional-dlp-deid-job-python-table"
+#   container_spec_gcs_path = module.template_project.python_re_identify_template_gs_path
+#   job_language            = "PYTHON"
+#   region                  = local.location
+#   service_account_email   = module.secured_data_warehouse.confidential_dataflow_controller_service_account_email
+#   subnetwork_self_link    = module.base_projects.confidential_subnets_self_link
+#   kms_key_name            = module.secured_data_warehouse.cmek_reidentification_crypto_key
+#   temp_location           = "gs://${module.secured_data_warehouse.confidential_data_dataflow_bucket_name}/tmp/"
+#   staging_location        = "gs://${module.secured_data_warehouse.confidential_data_dataflow_bucket_name}/staging/"
+
+#   parameters = {
+#     input_table                     = "bigquery-public-data:irs_990.irs_990_ein"
+#     deidentification_template_name  = "${module.re_identification_template.template_full_path}"
+#     window_interval_sec             = 30
+#     batch_size                      = 1000
+#     dlp_location                    = local.location
+#     dlp_project                     = "${module.base_projects.data_governance_project_id}"
+#     bq_schema                       = local.bq_schema_irs_990_ein
+#     output_table                    = "${module.base_projects.confidential_data_project_id}:secured_dataset.python_flex_template_deid_test_table"
+#     dlp_transform                   = "DE-IDENTIFY"
+#   }
+
+#   depends_on = [
+#     time_sleep.wait_de_identify_job_execution,
+#     google_bigquery_table.re_id
+#   ]
+# }
+
+# module "regional_dlp_transform_reid_python_query" {
 #   source = "../../modules/dataflow-flex-job"
 
 #   project_id              = module.base_projects.confidential_data_project_id

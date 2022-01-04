@@ -1,7 +1,7 @@
 {
     "deidentifyTemplate": {
-        displayName: "${display_name}",
-        description: "${description}",
+        "displayName": "${display_name}",
+        "description": "${description}",
         "deidentifyConfig": {
             "recordTransformations": {
                 "fieldTransformations": [
@@ -11,13 +11,7 @@
                                 "name": "ein"
                             },
                             {
-                                "name": "name"
-                            },
-                            {
                                 "name": "street"
-                            },
-                            {
-                                "name": "organization"
                             }
                         ],
                         "primitiveTransformation": {
@@ -28,6 +22,52 @@
                                         "wrappedKey": "${wrapped_key}"
                                     }
                                 }
+                            }
+                        }
+                    },
+                    {
+                        "fields": [
+                            {
+                                "name": "name"
+                            }
+                        ],
+                        "infoTypeTransformations": {
+                            "transformations": [
+                                {
+                                    "infoTypes": [
+                                        {
+                                            "name": "PERSON_NAME"
+                                        }
+                                    ],
+                                    "primitiveTransformation": {
+                                        "cryptoDeterministicConfig": {
+                                            "cryptoKey": {
+                                                "kmsWrapped": {
+                                                    "cryptoKeyName": "${crypto_key}",
+                                                    "wrappedKey": "${wrapped_key}"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "fields": [
+                            {
+                                "name": "state"
+                            }
+                        ],
+                        "primitiveTransformation": {
+                            "cryptoReplaceFfxFpeConfig": {
+                                "cryptoKey": {
+                                    "kmsWrapped": {
+                                        "cryptoKeyName": "${crypto_key}",
+                                        "wrappedKey": "${wrapped_key}"
+                                    }
+                                },
+                                "customAlphabet": "abcdefghijklmnopqrstuvwxyz _-;:,.ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
                             }
                         }
                     }
