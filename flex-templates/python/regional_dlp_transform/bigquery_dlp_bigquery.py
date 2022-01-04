@@ -21,8 +21,9 @@ import apache_beam as beam
 import apache_beam.transforms.window as window
 from apache_beam.options.pipeline_options import (GoogleCloudOptions,
                                                   PipelineOptions)
-from apache_beam.transforms import DoFn, ParDo, PTransform, BatchElements
+from apache_beam.transforms import BatchElements, DoFn, ParDo, PTransform
 from apache_beam.utils.annotations import experimental
+from google.cloud import dlp_v2
 
 
 def run(argv=None, save_main_session=True):
@@ -35,6 +36,9 @@ def run(argv=None, save_main_session=True):
         help=(
             'Input query to retrieve data from Dataset. '
             'Example: `SELECT * FROM PROJECT:DATASET.TABLE LIMIT 100`.'
+            'You need to specify either an input-table or query.'
+            'It is recommended to use query'
+            'when you want to use a public dataset.'
         )
     )
     group_exclusive.add_argument(
@@ -42,6 +46,9 @@ def run(argv=None, save_main_session=True):
         help=(
             'Input BigQuery table for results specified as: '
             'PROJECT:DATASET.TABLE or DATASET.TABLE.'
+            'You need to specify either an input-table or query.'
+            'It is recommended to use input-table'
+            'for when you have your own dataset.'
         )
     )
     group.add_argument(
@@ -119,23 +126,28 @@ def run(argv=None, save_main_session=True):
     with beam.Pipeline(options=options) as p:
 
         # Read from BigQuery into a PCollection.
-        if known_args.query is not None:
+        if known_args.input_table is not None:
             messages = (
                 p
                 | 'Read from BigQuery Table' >>
                 beam.io.ReadFromBigQuery(
-                    query=known_args.query
+                    table=known_args.input_table
                 )
                 | 'Apply window' >> beam.WindowInto(
                     window.FixedWindows(known_args.window_interval_sec, 0)
                 )
             )
         else:
+            if 'LIMIT' not in known_args.query:
+                logging.warning('The query has no LIMIT parameter set.'
+                                'This can lead to a pipeline processing'
+                                'taking more time.')
+
             messages = (
                 p
-                | 'Read from BigQuery Table' >>
+                | 'Run SQL query to read data from BigQuery Table.' >>
                 beam.io.ReadFromBigQuery(
-                    table=known_args.input_table
+                    query=known_args.query
                 )
                 | 'Apply window' >> beam.WindowInto(
                     window.FixedWindows(known_args.window_interval_sec, 0)
@@ -183,6 +195,8 @@ def run(argv=None, save_main_session=True):
         transformed_messages | 'Write to BQ' >> beam.io.WriteToBigQuery(
             known_args.output_table,
             schema=known_args.bq_schema,
+            method=beam.io.WriteToBigQuery.Method.FILE_LOADS,
+            triggering_frequency=300,
             create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED
         )
 
@@ -244,20 +258,15 @@ class UnmaskDetectedDetails(PTransform):
     def __init__(
             self,
             project=None,
-            location="global",
+            location='us-east4',
             template_name=None,
-            reidentification_config=None,
             timeout=None):
 
         self.config = {}
         self.project = project
         self.timeout = timeout
         self.location = location
-
-        if template_name is not None:
-            self.config['reidentify_template_name'] = template_name
-        else:
-            self.config['reidentify_config'] = reidentification_config
+        self.config['reidentify_template_name'] = template_name
 
     def expand(self, pcoll):
         if self.project is None:
@@ -265,8 +274,9 @@ class UnmaskDetectedDetails(PTransform):
                 GoogleCloudOptions).project
         if self.project is None:
             raise ValueError(
-                'GCP project name needs to be specified '
-                'in "project" pipeline option')
+                'GCP project name needs to be specified'
+                'in "dlp_project" pipeline option.'
+                )
         return (
             pcoll
             | ParDo(_ReidentifyFn(
@@ -295,7 +305,6 @@ class _ReidentifyFn(DoFn):
         self.params = {}
 
     def setup(self):
-        from google.cloud import dlp_v2
         if self.client is None:
             self.client = dlp_v2.DlpServiceClient()
         self.params = {
@@ -319,20 +328,15 @@ class MaskDetectedDetails(PTransform):
     def __init__(
             self,
             project=None,
-            location="global",
+            location='us-east4',
             template_name=None,
-            deidentification_config=None,
             timeout=None):
 
         self.config = {}
         self.project = project
         self.timeout = timeout
         self.location = location
-
-        if template_name is not None:
-            self.config['deidentify_template_name'] = template_name
-        else:
-            self.config['deidentify_config'] = deidentification_config
+        self.config['deidentify_template_name'] = template_name
 
     def expand(self, pcoll):
         if self.project is None:
@@ -340,8 +344,9 @@ class MaskDetectedDetails(PTransform):
                 GoogleCloudOptions).project
         if self.project is None:
             raise ValueError(
-                'GCP project name needs to be specified '
-                'in "project" pipeline option')
+                'GCP project name needs to be specified'
+                'in "dlp_project" pipeline option.'
+                )
         return (
             pcoll
             | ParDo(_DeidentifyFn(
@@ -370,7 +375,6 @@ class _DeidentifyFn(DoFn):
         self.params = {}
 
     def setup(self):
-        from google.cloud import dlp_v2
         if self.client is None:
             self.client = dlp_v2.DlpServiceClient()
         self.params = {
