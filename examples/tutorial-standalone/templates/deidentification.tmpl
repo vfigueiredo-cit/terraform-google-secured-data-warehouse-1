@@ -28,6 +28,24 @@
                     {
                         "fields": [
                             {
+                                "name": "state"
+                            }
+                        ],
+                        "primitiveTransformation": {
+                            "cryptoReplaceFfxFpeConfig": {
+                                "cryptoKey": {
+                                    "kmsWrapped": {
+                                        "cryptoKeyName": "${crypto_key}",
+                                        "wrappedKey": "${wrapped_key}"
+                                    }
+                                },
+                                "customAlphabet": "abcdefghijklmnopqrstuvwxyz _-;:,.ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+                            }
+                        }
+                    },
+                    {
+                        "fields": [
+                            {
                                 "name": "name"
                             }
                         ],
@@ -46,29 +64,14 @@
                                                     "cryptoKeyName": "${crypto_key}",
                                                     "wrappedKey": "${wrapped_key}"
                                                 }
+                                            },
+                                            "surrogateInfoType": {
+                                                "name": "PERSON_NAME"
                                             }
                                         }
                                     }
                                 }
                             ]
-                        }
-                    },
-                    {
-                        "fields": [
-                            {
-                                "name": "state"
-                            }
-                        ],
-                        "primitiveTransformation": {
-                            "cryptoReplaceFfxFpeConfig": {
-                                "cryptoKey": {
-                                    "kmsWrapped": {
-                                        "cryptoKeyName": "${crypto_key}",
-                                        "wrappedKey": "${wrapped_key}"
-                                    }
-                                },
-                                "customAlphabet": "abcdefghijklmnopqrstuvwxyz _-;:,.ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-                            }
                         }
                     }
                 ]
