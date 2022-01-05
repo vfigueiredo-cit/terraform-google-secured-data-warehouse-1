@@ -189,7 +189,7 @@ module "regional_dlp_transform_deid_python_query" {
 
   parameters = {
     #query                           = "SELECT * FROM [${module.base_projects.non_confidential_data_project_id}:non_confidential_dataset.python_flex_template_test]"
-    query                           = "SELECT * FROM [bigquery-public-data:irs_990.irs_990_ein] LIMIT 10"
+    query                           = "SELECT * FROM [bigquery-public-data:irs_990.irs_990_ein] LIMIT 10000"
     deidentification_template_name  = module.de_identification_template.template_full_path
     window_interval_sec             = 30
     batch_size                      = 1000
