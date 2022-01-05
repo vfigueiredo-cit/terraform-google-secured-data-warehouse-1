@@ -113,12 +113,32 @@ resource "google_artifact_registry_repository_iam_member" "docker_reader" {
   member     = "serviceAccount:${module.secured_data_warehouse.dataflow_controller_service_account_email}"
 }
 
+resource "google_artifact_registry_repository_iam_member" "python_reader" {
+  provider = google-beta
+
+  project    = module.template_project.project_id
+  location   = local.location
+  repository = "python-modules"
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:${module.secured_data_warehouse.dataflow_controller_service_account_email}"
+}
+
 resource "google_artifact_registry_repository_iam_member" "confidential_docker_reader" {
   provider = google-beta
 
   project    = module.template_project.project_id
   location   = local.location
   repository = "flex-templates"
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:${module.secured_data_warehouse.confidential_dataflow_controller_service_account_email}"
+}
+
+resource "google_artifact_registry_repository_iam_member" "confidential_python_reader" {
+  provider = google-beta
+
+  project    = module.template_project.project_id
+  location   = local.location
+  repository = "python-modules"
   role       = "roles/artifactregistry.reader"
   member     = "serviceAccount:${module.secured_data_warehouse.confidential_dataflow_controller_service_account_email}"
 }
@@ -179,10 +199,6 @@ module "regional_dlp_transform_deid_python_query" {
     output_table                    = "${module.base_projects.non_confidential_data_project_id}:${local.non_confidential_dataset_id}.python_flex_template_deid_test_query"
     dlp_transform                   = "DE-IDENTIFY"
   }
-
-  depends_on = [
-    time_sleep.wait_de_identify_job_execution
-  ]
 }
 
  resource "time_sleep" "wait_de_identify_job_execution" {
