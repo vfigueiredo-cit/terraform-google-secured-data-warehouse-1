@@ -23,7 +23,6 @@ locals {
   confidential_table_id           = "irs_990_ein_re_id"
   non_confidential_table_id       = "irs_990_ein_de_id"
   wrapped_key_secret_data         = chomp(data.google_secret_manager_secret_version.wrapped_key.secret_data)
-  //bq_schema_irs_990_ein           = "ein:STRING, name:STRING, ico:STRING, street:STRING, city:STRING, state:STRING, income_amt:STRING, revenue_amt:STRING"
   bigquery_non_confidential_table = "${module.base_projects.non_confidential_data_project_id}:${local.non_confidential_dataset_id}.${local.non_confidential_table_id}"
   bigquery_confidential_table     = "${module.base_projects.confidential_data_project_id}:${local.confidential_dataset_id}.${local.confidential_table_id}"
   cc_file_name                    = "cc_10000_records.csv"
@@ -154,33 +153,6 @@ resource "google_storage_bucket_object" "sample_file" {
   ]
 }
 
-# module "regional_deid_pipeline" {
-#   source = "../../modules/dataflow-flex-job"
-
-#   project_id              = module.base_projects.data_ingestion_project_id
-#   name                    = "dataflow-flex-regional-dlp-deid-job-python-query"
-#   container_spec_gcs_path = module.template_project.python_re_identify_template_gs_path
-#   job_language            = "PYTHON"
-#   region                  = local.location
-#   service_account_email   = module.secured_data_warehouse.dataflow_controller_service_account_email
-#   subnetwork_self_link    = module.base_projects.data_ingestion_subnets_self_link
-#   kms_key_name            = module.secured_data_warehouse.cmek_data_ingestion_crypto_key
-#   temp_location           = "gs://${module.secured_data_warehouse.data_ingestion_dataflow_bucket_name}/tmp/"
-#   staging_location        = "gs://${module.secured_data_warehouse.data_ingestion_dataflow_bucket_name}/staging/"
-
-#   parameters = {
-#     query                          = "SELECT ein, name, ico, street, city, state, income_amt, revenue_amt FROM [bigquery-public-data:irs_990.irs_990_ein] LIMIT 10000"
-#     deidentification_template_name = module.de_identification_template.template_full_path
-#     window_interval_sec            = 30
-#     batch_size                     = 1000
-#     dlp_location                   = local.location
-#     dlp_project                    = module.base_projects.data_governance_project_id
-#     bq_schema                      = local.bq_schema_irs_990_ein
-#     output_table                   = local.bigquery_non_confidential_table
-#     dlp_transform                  = "DE-IDENTIFY"
-#   }
-# }
-
 module "regional_deid" {
   source = "../../modules/dataflow-flex-job"
 
@@ -204,7 +176,6 @@ module "regional_deid" {
     dlpProjectId           = module.base_projects.data_governance_project_id
     dlpLocation            = local.location
     deidentifyTemplateName = module.de_identification_template.template_full_path
-    //bqSchema               = "Card_Type_Code:STRING,Card_Type_Full_Name:STRING,Issuing_Bank:STRING,Card_Number:STRING,Card_Holders_Name:STRING,CVVCVV2:STRING,Issue_Date:STRING,Expiry_Date:STRING,Billing_Date:STRING,Card_PIN:STRING,Credit_Limit:STRING"
     trigFrequency          = 1
   }
 
@@ -252,41 +223,3 @@ module "regional_reid" {
     google_bigquery_table.re_id
   ]
 }
-
-# resource "time_sleep" "wait_de_identify_job_execution" {
-#   create_duration = "600s"
-
-#   depends_on = [
-#     module.regional_deid_pipeline
-#   ]
-# }
-
-# module "regional_reid" {
-#   source = "../../modules/dataflow-flex-job"
-
-#   project_id              = module.base_projects.confidential_data_project_id
-#   name                    = "dataflow-flex-regional-dlp-reid-job"
-#   container_spec_gcs_path = module.template_project.java_re_identify_template_gs_path
-#   region                  = local.location
-#   service_account_email   = module.secured_data_warehouse.confidential_dataflow_controller_service_account_email
-#   subnetwork_self_link    = module.base_projects.confidential_subnets_self_link
-#   kms_key_name            = module.secured_data_warehouse.cmek_reidentification_crypto_key
-#   temp_location           = "gs://${module.secured_data_warehouse.confidential_data_dataflow_bucket_name}/tmp/"
-#   staging_location        = "gs://${module.secured_data_warehouse.confidential_data_dataflow_bucket_name}/staging/"
-
-#   parameters = {
-#     inputBigQueryTable        = "${module.base_projects.non_confidential_data_project_id}:${local.non_confidential_dataset_id}.${local.non_confidential_table_id}"
-#     outputBigQueryDataset     = "secured_dataset"
-#     deidentifyTemplateName    = module.de_identification_template.template_full_path
-#     dlpLocation               = local.location
-#     batchSize                 = 100 * 1024
-#     dlpProjectId              = module.base_projects.data_governance_project_id
-#     confidentialDataProjectId = module.base_projects.confidential_data_project_id
-#     dlpTransform              = "RE-IDENTIFY"
-#   }
-
-#   depends_on = [
-#     time_sleep.wait_de_identify_job_execution,
-#     google_bigquery_table.re_id
-#   ]
-# }
